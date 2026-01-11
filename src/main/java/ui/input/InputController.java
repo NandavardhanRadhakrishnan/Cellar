@@ -8,11 +8,8 @@ import core.grid.selection.SelectionManager;
 import core.value.NumberValue;
 import core.value.StringValue;
 import core.value.Value;
-import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
 import ui.CellEditor;
 import ui.Cursor;
 
@@ -34,8 +31,8 @@ public final class InputController {
     private final CommandRegistry commandRegistry;
 
 
-    final Map<InputMode, Map<Integer, InputAction>> keymap =
-            new EnumMap<>(InputMode.class);
+    final Map<InputMode, Map<KeyStroke, InputAction>> keymap =
+            new EnumMap<InputMode, Map<KeyStroke, InputAction>>(InputMode.class);
 
     {
         initNavigateMode();
@@ -45,10 +42,10 @@ public final class InputController {
 
 
     public void handleKey(KeyEvent e) {
-        Map<Integer, InputAction> actions =
+        Map<KeyStroke, InputAction> actions =
                 keymap.getOrDefault(mode, Map.of());
 
-        InputAction action = actions.get(e.getKeyCode());
+        InputAction action = actions.get(KeyStroke.from(e));
         if (action != null) {
             action.run(e);
             return;
@@ -65,57 +62,57 @@ public final class InputController {
 
 
     void initNavigateMode() {
-        Map<Integer, InputAction> nav = new HashMap<>();
+        Map<KeyStroke, InputAction> nav = new HashMap<>();
 
-        nav.put(KeyEvent.VK_W, e -> moveCursor(-1, 0));
-        nav.put(KeyEvent.VK_S, e -> moveCursor(1, 0));
-        nav.put(KeyEvent.VK_A, e -> moveCursor(0, -1));
-        nav.put(KeyEvent.VK_D, e -> moveCursor(0, 1));
+        nav.put(new KeyStroke(KeyEvent.VK_W), e -> moveCursor(-1, 0));
+        nav.put(new KeyStroke(KeyEvent.VK_S), e -> moveCursor(1, 0));
+        nav.put(new KeyStroke(KeyEvent.VK_A), e -> moveCursor(0, -1));
+        nav.put(new KeyStroke(KeyEvent.VK_D), e -> moveCursor(0, 1));
 
-        nav.put(KeyEvent.VK_SPACE, e -> {
+        nav.put(new KeyStroke(KeyEvent.VK_SPACE), e -> {
             mode = InputMode.SELECT;
             selectionManager.startSelection(
                     new CellAddress(cursor.row, cursor.col)
             );
         });
 
-        nav.put(KeyEvent.VK_ENTER, e -> enterEditMode());
+        nav.put(new KeyStroke(KeyEvent.VK_ENTER), e -> enterEditMode());
 
 //        Commands
-        nav.put(KeyEvent.VK_BACK_SPACE, e -> runCommand(commandRegistry.command("clear_cells")));
+        nav.put(new KeyStroke(KeyEvent.VK_BACK_SPACE), e -> runCommand(commandRegistry.command("clear_cells")));
 
         keymap.put(InputMode.NAVIGATE, nav);
     }
 
     void initSelectMode() {
-        Map<Integer, InputAction> select = new HashMap<>();
+        Map<KeyStroke, InputAction> select = new HashMap<>();
 
-        select.put(KeyEvent.VK_W, e -> moveCursor(-1, 0));
-        select.put(KeyEvent.VK_S, e -> moveCursor(1, 0));
-        select.put(KeyEvent.VK_A, e -> moveCursor(0, -1));
-        select.put(KeyEvent.VK_D, e -> moveCursor(0, 1));
+        select.put(new KeyStroke(KeyEvent.VK_W), e -> moveCursor(-1, 0));
+        select.put(new KeyStroke(KeyEvent.VK_S), e -> moveCursor(1, 0));
+        select.put(new KeyStroke(KeyEvent.VK_A), e -> moveCursor(0, -1));
+        select.put(new KeyStroke(KeyEvent.VK_D), e -> moveCursor(0, 1));
 
-        select.put(KeyEvent.VK_SPACE, e -> mode = InputMode.NAVIGATE);
-        select.put(KeyEvent.VK_ENTER, e -> enterEditMode());
+        select.put(new KeyStroke(KeyEvent.VK_SPACE), e -> mode = InputMode.NAVIGATE);
+        select.put(new KeyStroke(KeyEvent.VK_ENTER), e -> enterEditMode());
 
 //        Commands
-        select.put(KeyEvent.VK_BACK_SPACE, e -> runCommand(commandRegistry.command("clear_cells")));
+        select.put(new KeyStroke(KeyEvent.VK_BACK_SPACE), e -> runCommand(commandRegistry.command("clear_cells")));
 
         keymap.put(InputMode.SELECT, select);
     }
 
     void initEditMode() {
-        Map<Integer, InputAction> edit = new HashMap<>();
+        Map<KeyStroke, InputAction> edit = new HashMap<>();
 
-        edit.put(KeyEvent.VK_ENTER, e -> {
+        edit.put(new KeyStroke(KeyEvent.VK_ENTER), e -> {
             commitEditorValue();
             mode = InputMode.NAVIGATE;
         });
 
-        edit.put(KeyEvent.VK_BACK_SPACE, e -> editor.backspace());
-        edit.put(KeyEvent.VK_LEFT, e -> editor.moveLeft());
-        edit.put(KeyEvent.VK_RIGHT, e -> editor.moveRight());
-        edit.put(KeyEvent.VK_SPACE, e -> editor.append(' '));
+        edit.put(new KeyStroke(KeyEvent.VK_BACK_SPACE), e -> editor.backspace());
+        edit.put(new KeyStroke(KeyEvent.VK_LEFT), e -> editor.moveLeft());
+        edit.put(new KeyStroke(KeyEvent.VK_RIGHT), e -> editor.moveRight());
+        edit.put(new KeyStroke(KeyEvent.VK_SPACE), e -> editor.append(' '));
 
         keymap.put(InputMode.EDIT, edit);
     }
