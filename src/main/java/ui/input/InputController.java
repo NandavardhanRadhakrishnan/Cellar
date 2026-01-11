@@ -1,5 +1,7 @@
 package ui.input;
 
+import application.CommandRegistry;
+import application.commands.Command;
 import core.grid.CellAddress;
 import core.grid.Grid;
 import core.grid.selection.SelectionManager;
@@ -21,17 +23,16 @@ import java.util.Map;
 
 @Getter
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public final class InputController {
 
     InputMode mode = InputMode.NAVIGATE;
 
-    @NonNull Grid grid;
-    @NonNull
-    Cursor cursor;
-    @NonNull
-    CellEditor editor;
-    @NonNull SelectionManager selectionManager;
+    private final Grid grid;
+    private final Cursor cursor;
+    private final CellEditor editor;
+    private final SelectionManager selectionManager;
+    private final CommandRegistry commandRegistry;
+
 
     final Map<InputMode, Map<Integer, InputAction>> keymap =
             new EnumMap<>(InputMode.class);
@@ -80,6 +81,9 @@ public final class InputController {
 
         nav.put(KeyEvent.VK_ENTER, e -> enterEditMode());
 
+//        Commands
+        nav.put(KeyEvent.VK_BACK_SPACE, e -> runCommand(commandRegistry.command("clear_cells")));
+
         keymap.put(InputMode.NAVIGATE, nav);
     }
 
@@ -93,6 +97,9 @@ public final class InputController {
 
         select.put(KeyEvent.VK_SPACE, e -> mode = InputMode.NAVIGATE);
         select.put(KeyEvent.VK_ENTER, e -> enterEditMode());
+
+//        Commands
+        select.put(KeyEvent.VK_BACK_SPACE, e -> runCommand(commandRegistry.command("clear_cells")));
 
         keymap.put(InputMode.SELECT, select);
     }
@@ -111,6 +118,17 @@ public final class InputController {
         edit.put(KeyEvent.VK_SPACE, e -> editor.append(' '));
 
         keymap.put(InputMode.EDIT, edit);
+    }
+
+    void runCommand(Command command) {
+        command.execute();
+
+        switch (command.selectionPolicy()) {
+            case KEEP -> {
+            }
+            case CLEAR -> selectionManager.clear();
+            case COLLAPSE -> selectionManager.startSelection(new CellAddress(cursor.row, cursor.col));
+        }
     }
 
 

@@ -3,6 +3,7 @@ package core.grid.selection;
 import core.grid.CellAddress;
 import core.grid.Range;
 import lombok.Getter;
+import ui.Cursor;
 
 @Getter
 public class SelectionManager {
@@ -27,6 +28,13 @@ public class SelectionManager {
                     new Range(anchor, cursor)
             );
         }
+    }
+
+    public Iterable<CellAddress> getSelectedCellAddresses() {
+        if (selection != null) {
+            return selection.getSelectedCellAddresses();
+        }
+        return null;
     }
 
     public boolean hasSelection() {

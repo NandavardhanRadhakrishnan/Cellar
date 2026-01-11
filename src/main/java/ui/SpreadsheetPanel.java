@@ -5,6 +5,7 @@ import core.grid.Grid;
 import core.grid.selection.Selection;
 import core.grid.selection.SelectionManager;
 import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import ui.input.InputController;
 import util.Util;
@@ -14,31 +15,25 @@ import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SpreadsheetPanel extends JPanel {
 
     static final int CELL_W = 80;
     static final int CELL_H = 25;
 
-    final Grid grid = new Grid(20, 10);
-    final Cursor cursor = new Cursor();
-    final CellEditor editor = new CellEditor();
-    final SelectionManager selectionManager = new SelectionManager();
-    final StatusBar statusBar = new StatusBar();
+    Grid grid;
+    Cursor cursor;
+    CellEditor editor;
+    SelectionManager selectionManager;
+    InputController input;
 
-    final InputController input;
+    StatusBar statusBar = new StatusBar();
 
-    public SpreadsheetPanel() {
+    {
         setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
         setFocusable(true);
         requestFocusInWindow();
-
-        input = new InputController(
-                grid,
-                cursor,
-                editor,
-                selectionManager
-        );
 
         addKeyListener(new KeyAdapter() {
             @Override
@@ -62,12 +57,13 @@ public class SpreadsheetPanel extends JPanel {
 
             for (int c = 0; c < grid.cols; c++) {
                 int x = c * CELL_W;
+                CellAddress addr = new CellAddress(r, c);
 
                 if (cursor.row == r && cursor.col == c) {
                     g.setColor(Color.BLACK);
                     g.fillRect(x, y, CELL_W, CELL_H);
                     g.setColor(Color.WHITE);
-                } else if (selection!= null && selection.contains(new CellAddress(r, c))){
+                } else if (selection != null && selection.contains(addr)) {
                     g.setColor(new Color(128, 176, 255));
                     g.fillRect(x, y, CELL_W, CELL_H);
                     g.setColor(Color.WHITE);
@@ -85,13 +81,15 @@ public class SpreadsheetPanel extends JPanel {
                 g.drawRect(x, y, CELL_W, CELL_H);
 
                 g.setColor(Color.BLACK);
-                String text = grid.getCell(r, c).getValue().display();
-                g.drawString(text, x + 5, y + 17);
+                g.drawString(
+                        grid.getCell(r, c).getValue().display(),
+                        x + 5,
+                        y + 17
+                );
             }
         }
 
         String statusText = baseStatusText() + selectionSuffix();
-
 
         statusBar.draw(
                 g,
@@ -104,20 +102,15 @@ public class SpreadsheetPanel extends JPanel {
 
     private String baseStatusText() {
         return switch (input.getMode()) {
-            case EDIT ->
-                    editor.valueWithCursor();
-
+            case EDIT -> editor.valueWithCursor();
             case NAVIGATE, SELECT ->
                     Util.intToColumnLabel(cursor.col)
-                    +
-                    Util.intToRowLabel(cursor.row);
+                            + Util.intToRowLabel(cursor.row);
         };
     }
 
     private String selectionSuffix() {
-        if (!selectionManager.hasSelection()) {
-            return "";
-        }
+        if (!selectionManager.hasSelection()) return "";
 
         return " ("
                 + Util.cellAddressToLabel(selectionManager.getAnchor())
@@ -125,6 +118,4 @@ public class SpreadsheetPanel extends JPanel {
                 + Util.cellAddressToLabel(selectionManager.getLimit())
                 + ")";
     }
-
-
 }

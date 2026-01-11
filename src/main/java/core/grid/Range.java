@@ -1,5 +1,8 @@
 package core.grid;
 
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 public final class Range {
 
     private final int r1, c1, r2, c2;
@@ -19,5 +22,36 @@ public final class Range {
     public boolean contains(int row, int col) {
         return row >= r1 && row <= r2
                 && col >= c1 && col <= c2;
+    }
+
+    public Iterable<CellAddress> getAllAddresses() {
+        return () -> new Iterator<>() {
+
+            private int row = r1;
+            private int col = c1;
+
+            @Override
+            public boolean hasNext() {
+                return row <= r2 && col <= c2;
+            }
+
+            @Override
+            public CellAddress next() {
+                if (!hasNext()){
+                    throw new NoSuchElementException();
+                }
+
+                CellAddress cellAddress = new CellAddress(row, col);
+
+                col++;
+
+                if (col > c2) {
+                    col = c1;
+                    row++;
+                }
+
+                return cellAddress;
+            }
+        };
     }
 }

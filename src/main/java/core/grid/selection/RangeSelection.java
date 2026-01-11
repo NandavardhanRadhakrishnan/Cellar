@@ -13,4 +13,9 @@ public record RangeSelection(Range range) implements Selection {
     public boolean contains(int row, int col) {
         return contains(new CellAddress(row,col));
     }
+
+    @Override
+    public Iterable<CellAddress> getSelectedCellAddresses() {
+        return range.getAllAddresses();
+    }
 }
