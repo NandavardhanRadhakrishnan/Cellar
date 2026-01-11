@@ -1,22 +1,23 @@
 package core.grid;
 
-import lombok.Data;
+public final class Range {
 
-import java.util.ArrayList;
-import java.util.List;
+    private final int r1, c1, r2, c2;
 
-@Data
-public class Range {
-    private final CellAddress start;
-    private final CellAddress end;
+    public Range(CellAddress a, CellAddress b) {
+        this.r1 = Math.min(a.getRow(), b.getRow());
+        this.c1 = Math.min(a.getCol(), b.getCol());
+        this.r2 = Math.max(a.getRow(), b.getRow());
+        this.c2 = Math.max(a.getCol(), b.getCol());
+    }
 
-    public List<CellAddress> cells() {
-        List<CellAddress> cellAddresses = new ArrayList<>();
-        for (int r = start.getRow(); r < end.getRow(); r++) {
-            for (int c = start.getCol(); c < end.getCol(); c++) {
-                cellAddresses.add(new CellAddress(r,c));
-            }
-        }
-        return cellAddresses;
+    public boolean contains(CellAddress addr) {
+        return addr.getRow() >= r1 && addr.getRow() <= r2
+                && addr.getCol() >= c1 && addr.getCol() <= c2;
+    }
+
+    public boolean contains(int row, int col) {
+        return row >= r1 && row <= r2
+                && col >= c1 && col <= c2;
     }
 }

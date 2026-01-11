@@ -1,5 +1,7 @@
 package util;
 
+import core.grid.CellAddress;
+
 public class Util {
 
     public static String intToColumnLabel(int col) {
@@ -13,6 +15,14 @@ public class Util {
 
     public static String intToRowLabel(int row) {
         return String.valueOf(row + 1);
+    }
+
+    public static String cellAddressToLabel(int row, int col) {
+        return intToColumnLabel(col) + intToRowLabel(row);
+    }
+
+    public static String cellAddressToLabel(CellAddress address) {
+        return cellAddressToLabel(address.getRow(), address.getCol());
     }
 
     public static int columnLabelToInt(String label) {

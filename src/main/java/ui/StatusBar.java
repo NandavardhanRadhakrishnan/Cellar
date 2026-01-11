@@ -1,5 +1,7 @@
 package ui;
 
+import ui.input.InputMode;
+
 import java.awt.*;
 
 public class StatusBar {
@@ -30,14 +32,9 @@ public class StatusBar {
     }
 
     private void drawModeBox(Graphics g, InputMode mode, int barY) {
-        String token = mode == InputMode.EDIT ? "EDIT" : "NAV";
-
-        Color bg = (mode == InputMode.EDIT)
-                ? new Color(255, 124, 62)
-                : new Color(115, 229, 115);
 
         // Box: flush left, full height
-        g.setColor(bg);
+        g.setColor(mode.getColor());
         g.fillRect(
                 0,
                 barY,
@@ -56,13 +53,13 @@ public class StatusBar {
 
         // Text centered vertically & horizontally in the box
         FontMetrics fm = g.getFontMetrics();
-        int textWidth = fm.stringWidth(token);
+        int textWidth = fm.stringWidth(mode.getLabel());
         int textAscent = fm.getAscent();
 
         int textX = (MODE_BOX_WIDTH - textWidth) / 2;
         int textY = barY + (HEIGHT + textAscent) / 2 - 2;
 
-        g.drawString(token, textX, textY);
+        g.drawString(mode.getLabel(), textX, textY);
     }
 
     private void drawEditorText(Graphics g, String text, int barY) {
