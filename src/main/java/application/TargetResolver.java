@@ -8,6 +8,7 @@ import core.grid.selection.SelectionManager;
 import lombok.Data;
 import ui.Cursor;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 @Data
@@ -27,6 +28,17 @@ public final class TargetResolver {
             action.accept(grid.getCell(cursor.row, cursor.col));
         }
     }
+
+    public Iterable<Iterable<CellAddress>> resolveRows() {
+        if (selectionManager.hasSelection()) {
+            return selectionManager.getSelection().getRows();
+        }
+
+        return List.of(
+                List.of(new CellAddress(cursor.row, cursor.col))
+        );
+    }
+
 
     public CellAddress primaryCell(){
         return selectionManager.hasSelection()

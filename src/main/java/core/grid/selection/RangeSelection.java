@@ -18,4 +18,9 @@ public record RangeSelection(Range range) implements Selection {
     public Iterable<CellAddress> getSelectedCellAddresses() {
         return range.getAllAddresses();
     }
+
+    @Override
+    public Iterable<Iterable<CellAddress>> getRows() {
+        return range.getRows();
+    }
 }

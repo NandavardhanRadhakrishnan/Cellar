@@ -3,10 +3,13 @@ package app;
 import application.CommandRegistry;
 import application.TargetResolver;
 import application.commands.ClearCellsCommand;
+import application.commands.CopyCellsCommand;
+import core.clipboard.Clipboard;
 import core.grid.Grid;
 import core.grid.selection.SelectionManager;
 import ui.*;
 import ui.CellEditor;
+import ui.clipboard.SystemClipboard;
 import ui.input.InputController;
 
 import javax.swing.*;
@@ -27,9 +30,11 @@ public class CellarApp {
 
             // --- application ---
             TargetResolver targetResolver = new TargetResolver(grid, cursor, selectionManager);
+            Clipboard clipboard = new SystemClipboard();
 
             CommandRegistry commandRegistry = new CommandRegistry(List.of(
-                    new ClearCellsCommand(targetResolver)
+                    new ClearCellsCommand(targetResolver),
+                    new CopyCellsCommand(targetResolver, grid, clipboard)
             ));
 
             InputController input =

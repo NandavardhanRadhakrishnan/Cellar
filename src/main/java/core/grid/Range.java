@@ -54,4 +54,43 @@ public final class Range {
             }
         };
     }
+
+    public Iterable<Iterable<CellAddress>> getRows() {
+        return () -> new Iterator<>() {
+
+            private int row = r1;
+
+            @Override
+            public boolean hasNext() {
+                return row <= r2;
+            }
+
+            @Override
+            public Iterable<CellAddress> next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+
+                int currentRow = row++;
+
+                return () -> new Iterator<>() {
+                    private int col = c1;
+
+                    @Override
+                    public boolean hasNext() {
+                        return col <= c2;
+                    }
+
+                    @Override
+                    public CellAddress next() {
+                        if (!hasNext()) {
+                            throw new NoSuchElementException();
+                        }
+                        return new CellAddress(currentRow, col++);
+                    }
+                };
+            }
+        };
+    }
+
 }

@@ -80,6 +80,7 @@ public final class InputController {
 
 //        Commands
         nav.put(new KeyStroke(KeyEvent.VK_BACK_SPACE), e -> runCommand(commandRegistry.command("clear_cells")));
+        nav.put(new KeyStroke(KeyEvent.VK_C,true,false,false), e -> runCommand(commandRegistry.command("copy")));
 
         keymap.put(InputMode.NAVIGATE, nav);
     }

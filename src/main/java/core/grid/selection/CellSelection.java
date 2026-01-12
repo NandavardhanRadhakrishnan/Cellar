@@ -21,4 +21,9 @@ public record CellSelection(CellAddress cellAddress) implements Selection {
         return Collections.singleton(cellAddress);
     }
 
+    @Override
+    public Iterable<Iterable<CellAddress>> getRows() {
+        return Collections.singleton(Collections.singleton(cellAddress));
+    }
+
 }

@@ -8,4 +8,6 @@ public sealed interface Selection permits CellSelection, RangeSelection {
     boolean contains(int row, int col);
 
     Iterable<CellAddress> getSelectedCellAddresses();
+
+    Iterable<Iterable<CellAddress>> getRows();
 }
