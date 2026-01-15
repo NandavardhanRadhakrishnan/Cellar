@@ -1,6 +1,11 @@
 package core.value;
 
-public record StringValue(String value) implements Value {
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
+@lombok.Value
+public class StringValue implements Value {
+    String value;
 
 
     @Override

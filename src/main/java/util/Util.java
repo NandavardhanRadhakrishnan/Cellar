@@ -37,4 +37,23 @@ public class Util {
         return Integer.parseInt(label) - 1;
     }
 
+    public static CellAddress labelToCellAddress(String label) {
+        int i = 0;
+
+        while (i < label.length() && Character.isLetter(label.charAt(i))) {
+            i++;
+        }
+
+        if (i == 0 || i == label.length()) {
+            throw new IllegalArgumentException("Invalid cell label: " + label);
+        }
+
+        String colPart = label.substring(0, i).toUpperCase();
+        String rowPart = label.substring(i);
+
+        int col = columnLabelToInt(colPart);
+        int row = rowLabelToInt(rowPart);
+
+        return new CellAddress(row, col);
+    }
 }

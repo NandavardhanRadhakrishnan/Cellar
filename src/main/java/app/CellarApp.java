@@ -5,6 +5,9 @@ import application.TargetResolver;
 import application.commands.ClearCellsCommand;
 import application.commands.CopyCellsCommand;
 import core.clipboard.Clipboard;
+import core.eval.Evaluator;
+import core.formula.Formula;
+import core.formula.FormulaEngine;
 import core.grid.Grid;
 import core.grid.selection.SelectionManager;
 import ui.*;
@@ -23,6 +26,7 @@ public class CellarApp {
             // --- core ---
             Grid grid = new Grid(20, 10);
             SelectionManager selectionManager = new SelectionManager();
+            FormulaEngine formulaEngine = new FormulaEngine();
 
             // --- ui/application state ---
             Cursor cursor = new Cursor();
@@ -43,7 +47,8 @@ public class CellarApp {
                             cursor,
                             editor,
                             selectionManager,
-                            commandRegistry
+                            commandRegistry,
+                            formulaEngine
                     );
 
 
@@ -54,7 +59,8 @@ public class CellarApp {
                             cursor,
                             editor,
                             selectionManager,
-                            input
+                            input,
+                            formulaEngine
                     );
 
             JFrame frame = new JFrame("Cellar");

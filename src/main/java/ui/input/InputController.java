@@ -2,11 +2,10 @@ package ui.input;
 
 import application.CommandRegistry;
 import application.commands.Command;
+import core.formula.FormulaEngine;
 import core.grid.CellAddress;
 import core.grid.Grid;
 import core.grid.selection.SelectionManager;
-import core.value.NumberValue;
-import core.value.StringValue;
 import core.value.Value;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +28,7 @@ public final class InputController {
     private final CellEditor editor;
     private final SelectionManager selectionManager;
     private final CommandRegistry commandRegistry;
+    private final FormulaEngine formulaEngine;
 
 
     final Map<InputMode, Map<KeyStroke, InputAction>> keymap =
@@ -122,13 +122,11 @@ public final class InputController {
         command.execute();
 
         switch (command.selectionPolicy()) {
-            case KEEP -> {
-            }
+            case KEEP -> {}
             case CLEAR -> selectionManager.clear();
             case COLLAPSE -> selectionManager.startSelection(new CellAddress(cursor.row, cursor.col));
         }
     }
-
 
     void moveCursor(int dRow, int dCol) {
         cursor.row += dRow;
@@ -145,28 +143,31 @@ public final class InputController {
         mode = InputMode.EDIT;
         editor.clear();
 
-        Value value = grid.getValue(
-                new CellAddress(cursor.row, cursor.col)
-        );
+        CellAddress addr = new CellAddress(cursor.row, cursor.col);
+        var cell = grid.getCell(addr);
 
-        if (!value.isEmpty()) {
-            editor.append(value.display());
-        }
+        if (cell == null) return;
+
+        Value raw = cell.getRaw();
+        if (raw == null || raw.isEmpty()) return;
+
+        // IMPORTANT: use RAW, not computed/display
+        editor.append(raw.display());
     }
+
 
     void commitEditorValue() {
         String raw = editor.value();
+        CellAddress cellAddress = new CellAddress(cursor.row, cursor.col);
 
         if (raw.isBlank()) {
             grid.getCell(cursor.row, cursor.col).clear();
+            grid.recalculateAll(formulaEngine.evaluator());
             return;
         }
 
-        try {
-            double n = Double.parseDouble(raw);
-            grid.setCell(cursor.row, cursor.col, new NumberValue(n));
-        } catch (NumberFormatException e) {
-            grid.setCell(cursor.row, cursor.col, new StringValue(raw));
-        }
+        Value parsed = formulaEngine.parseValue(raw);
+        grid.setCell(cellAddress, parsed);
+        grid.recalculateAll(formulaEngine.evaluator());
     }
 }

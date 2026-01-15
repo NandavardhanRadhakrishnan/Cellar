@@ -1,11 +1,14 @@
 package core.value;
 
+import core.formula.Formula;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @lombok.Value
-public final class ErrorValue implements Value {
-    private final String message;
+public class FormulaValue implements Value {
+
+    private final String source;
+    private final Formula formula;
 
     @Override
     public boolean isEmpty() {
@@ -14,6 +17,6 @@ public final class ErrorValue implements Value {
 
     @Override
     public String display() {
-        return "#ERR: " + message;
+        return source;
     }
 }

@@ -1,5 +1,6 @@
 package ui;
 
+import core.formula.FormulaEngine;
 import core.grid.CellAddress;
 import core.grid.Grid;
 import core.grid.selection.Selection;
@@ -27,6 +28,7 @@ public class SpreadsheetPanel extends JPanel {
     CellEditor editor;
     SelectionManager selectionManager;
     InputController input;
+    FormulaEngine formulaEngine;
 
     StatusBar statusBar = new StatusBar();
 
@@ -39,6 +41,7 @@ public class SpreadsheetPanel extends JPanel {
             @Override
             public void keyPressed(KeyEvent e) {
                 input.handleKey(e);
+                grid.recalculateAll(formulaEngine.evaluator());
                 repaint();
             }
         });

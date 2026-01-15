@@ -1,5 +1,7 @@
 package core.grid;
 
+import core.eval.Evaluator;
+import core.eval.GridEvalContext;
 import core.value.StringValue;
 import core.value.Value;
 import lombok.Data;
@@ -25,7 +27,7 @@ public class Grid {
     }
 
     public void setCell(CellAddress address, Value value){
-        getCell(address).setValue(value);
+        getCell(address).setRaw(value);
     }
 
     public void setCell(int row, int col, Value value){
@@ -34,5 +36,17 @@ public class Grid {
 
     public Value getValue(CellAddress address){
         return getCell(address).getValue();
+    }
+
+    public void clearComputedValues(){
+        cells.values().forEach(cell -> cell.setComputed(null));
+    }
+
+    public void recalculateAll(Evaluator evaluator) {
+        clearComputedValues();
+        GridEvalContext ctx = new GridEvalContext(this, evaluator);
+        for (CellAddress cellAddress: cells.keySet()){
+            ctx.resolve(cellAddress);
+        }
     }
 }

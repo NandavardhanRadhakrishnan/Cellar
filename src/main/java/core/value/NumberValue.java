@@ -1,6 +1,12 @@
 package core.value;
 
-public record NumberValue(double value) implements Value {
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
+@lombok.Value
+public class NumberValue implements Value {
+    double value;
+
 
     @Override
     public boolean isEmpty() {
