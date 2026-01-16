@@ -7,167 +7,184 @@ import core.grid.CellAddress;
 import core.grid.Grid;
 import core.grid.selection.SelectionManager;
 import core.value.Value;
+import java.awt.event.KeyEvent;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import ui.CellEditor;
 import ui.Cursor;
 
-import java.awt.event.KeyEvent;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
-
 @Getter
 @RequiredArgsConstructor
 public final class InputController {
 
-    InputMode mode = InputMode.NAVIGATE;
+  InputMode mode = InputMode.NAVIGATE;
 
-    private final Grid grid;
-    private final Cursor cursor;
-    private final CellEditor editor;
-    private final SelectionManager selectionManager;
-    private final CommandRegistry commandRegistry;
-    private final FormulaEngine formulaEngine;
+  private final Grid grid;
+  private final Cursor cursor;
+  private final CellEditor editor;
+  private final SelectionManager selectionManager;
+  private final CommandRegistry commandRegistry;
+  private final FormulaEngine formulaEngine;
 
+  final Map<InputMode, Map<KeyStroke, InputAction>> keymap = new EnumMap<InputMode, Map<KeyStroke, InputAction>>(
+    InputMode.class
+  );
 
-    final Map<InputMode, Map<KeyStroke, InputAction>> keymap =
-            new EnumMap<InputMode, Map<KeyStroke, InputAction>>(InputMode.class);
+  {
+    initNavigateMode();
+    initSelectMode();
+    initEditMode();
+  }
 
-    {
-        initNavigateMode();
-        initSelectMode();
-        initEditMode();
+  public void handleKey(KeyEvent e) {
+    Map<KeyStroke, InputAction> actions = keymap.getOrDefault(mode, Map.of());
+
+    InputAction action = actions.get(KeyStroke.from(e));
+    if (action != null) {
+      action.run(e);
+      return;
     }
 
+    // default character handling
+    if (mode == InputMode.EDIT) {
+      char ch = e.getKeyChar();
+      if (!Character.isISOControl(ch)) {
+        editor.append(ch);
+      }
+    }
+  }
 
-    public void handleKey(KeyEvent e) {
-        Map<KeyStroke, InputAction> actions =
-                keymap.getOrDefault(mode, Map.of());
+  void initNavigateMode() {
+    Map<KeyStroke, InputAction> nav = new HashMap<>();
 
-        InputAction action = actions.get(KeyStroke.from(e));
-        if (action != null) {
-            action.run(e);
-            return;
-        }
+    nav.put(new KeyStroke(KeyEvent.VK_W), e -> moveCursor(-1, 0));
+    nav.put(new KeyStroke(KeyEvent.VK_S), e -> moveCursor(1, 0));
+    nav.put(new KeyStroke(KeyEvent.VK_A), e -> moveCursor(0, -1));
+    nav.put(new KeyStroke(KeyEvent.VK_D), e -> moveCursor(0, 1));
 
-        // default character handling
-        if (mode == InputMode.EDIT) {
-            char ch = e.getKeyChar();
-            if (!Character.isISOControl(ch)) {
-                editor.append(ch);
-            }
-        }
+    nav.put(
+      new KeyStroke(KeyEvent.VK_SPACE),
+      e -> {
+        mode = InputMode.SELECT;
+        selectionManager.startSelection(
+          new CellAddress(cursor.row, cursor.col)
+        );
+      }
+    );
+
+    nav.put(new KeyStroke(KeyEvent.VK_ENTER), e -> enterEditMode());
+
+    //        Commands
+    nav.put(
+      new KeyStroke(KeyEvent.VK_BACK_SPACE),
+      e -> runCommand(commandRegistry.command("clear_cells"))
+    );
+    nav.put(
+      new KeyStroke(KeyEvent.VK_C, true, false, false),
+      e -> runCommand(commandRegistry.command("copy"))
+    );
+    nav.put(
+      new KeyStroke(KeyEvent.VK_T, true, true, false),
+      e -> runCommand(commandRegistry.command("toggle_dark_mode"))
+    );
+
+    keymap.put(InputMode.NAVIGATE, nav);
+  }
+
+  void initSelectMode() {
+    Map<KeyStroke, InputAction> select = new HashMap<>();
+
+    select.put(new KeyStroke(KeyEvent.VK_W), e -> moveCursor(-1, 0));
+    select.put(new KeyStroke(KeyEvent.VK_S), e -> moveCursor(1, 0));
+    select.put(new KeyStroke(KeyEvent.VK_A), e -> moveCursor(0, -1));
+    select.put(new KeyStroke(KeyEvent.VK_D), e -> moveCursor(0, 1));
+
+    select.put(
+      new KeyStroke(KeyEvent.VK_SPACE),
+      e -> mode = InputMode.NAVIGATE
+    );
+    select.put(new KeyStroke(KeyEvent.VK_ENTER), e -> enterEditMode());
+
+    //        Commands
+    select.put(
+      new KeyStroke(KeyEvent.VK_BACK_SPACE),
+      e -> runCommand(commandRegistry.command("clear_cells"))
+    );
+
+    keymap.put(InputMode.SELECT, select);
+  }
+
+  void initEditMode() {
+    Map<KeyStroke, InputAction> edit = new HashMap<>();
+
+    edit.put(
+      new KeyStroke(KeyEvent.VK_ENTER),
+      e -> {
+        commitEditorValue();
+        mode = InputMode.NAVIGATE;
+      }
+    );
+
+    edit.put(new KeyStroke(KeyEvent.VK_BACK_SPACE), e -> editor.backspace());
+    edit.put(new KeyStroke(KeyEvent.VK_LEFT), e -> editor.moveLeft());
+    edit.put(new KeyStroke(KeyEvent.VK_RIGHT), e -> editor.moveRight());
+    edit.put(new KeyStroke(KeyEvent.VK_SPACE), e -> editor.append(' '));
+
+    keymap.put(InputMode.EDIT, edit);
+  }
+
+  void runCommand(Command command) {
+    command.execute();
+
+    switch (command.selectionPolicy()) {
+      case KEEP -> {}
+      case CLEAR -> selectionManager.clear();
+      case COLLAPSE -> selectionManager.startSelection(
+        new CellAddress(cursor.row, cursor.col)
+      );
+    }
+  }
+
+  void moveCursor(int dRow, int dCol) {
+    cursor.row += dRow;
+    cursor.col += dCol;
+
+    if (mode == InputMode.SELECT) {
+      selectionManager.update(new CellAddress(cursor.row, cursor.col));
+    }
+  }
+
+  void enterEditMode() {
+    mode = InputMode.EDIT;
+    editor.clear();
+
+    CellAddress addr = new CellAddress(cursor.row, cursor.col);
+    var cell = grid.getCell(addr);
+
+    if (cell == null) return;
+
+    Value raw = cell.getRaw();
+    if (raw == null || raw.isEmpty()) return;
+
+    // IMPORTANT: use RAW, not computed/display
+    editor.append(raw.display());
+  }
+
+  void commitEditorValue() {
+    String raw = editor.value();
+    CellAddress cellAddress = new CellAddress(cursor.row, cursor.col);
+
+    if (raw.isBlank()) {
+      grid.getCell(cursor.row, cursor.col).clear();
+      grid.recalculateAll(formulaEngine.evaluator());
+      return;
     }
 
-
-    void initNavigateMode() {
-        Map<KeyStroke, InputAction> nav = new HashMap<>();
-
-        nav.put(new KeyStroke(KeyEvent.VK_W), e -> moveCursor(-1, 0));
-        nav.put(new KeyStroke(KeyEvent.VK_S), e -> moveCursor(1, 0));
-        nav.put(new KeyStroke(KeyEvent.VK_A), e -> moveCursor(0, -1));
-        nav.put(new KeyStroke(KeyEvent.VK_D), e -> moveCursor(0, 1));
-
-        nav.put(new KeyStroke(KeyEvent.VK_SPACE), e -> {
-            mode = InputMode.SELECT;
-            selectionManager.startSelection(
-                    new CellAddress(cursor.row, cursor.col)
-            );
-        });
-
-        nav.put(new KeyStroke(KeyEvent.VK_ENTER), e -> enterEditMode());
-
-//        Commands
-        nav.put(new KeyStroke(KeyEvent.VK_BACK_SPACE), e -> runCommand(commandRegistry.command("clear_cells")));
-        nav.put(new KeyStroke(KeyEvent.VK_C,true,false,false), e -> runCommand(commandRegistry.command("copy")));
-
-        keymap.put(InputMode.NAVIGATE, nav);
-    }
-
-    void initSelectMode() {
-        Map<KeyStroke, InputAction> select = new HashMap<>();
-
-        select.put(new KeyStroke(KeyEvent.VK_W), e -> moveCursor(-1, 0));
-        select.put(new KeyStroke(KeyEvent.VK_S), e -> moveCursor(1, 0));
-        select.put(new KeyStroke(KeyEvent.VK_A), e -> moveCursor(0, -1));
-        select.put(new KeyStroke(KeyEvent.VK_D), e -> moveCursor(0, 1));
-
-        select.put(new KeyStroke(KeyEvent.VK_SPACE), e -> mode = InputMode.NAVIGATE);
-        select.put(new KeyStroke(KeyEvent.VK_ENTER), e -> enterEditMode());
-
-//        Commands
-        select.put(new KeyStroke(KeyEvent.VK_BACK_SPACE), e -> runCommand(commandRegistry.command("clear_cells")));
-
-        keymap.put(InputMode.SELECT, select);
-    }
-
-    void initEditMode() {
-        Map<KeyStroke, InputAction> edit = new HashMap<>();
-
-        edit.put(new KeyStroke(KeyEvent.VK_ENTER), e -> {
-            commitEditorValue();
-            mode = InputMode.NAVIGATE;
-        });
-
-        edit.put(new KeyStroke(KeyEvent.VK_BACK_SPACE), e -> editor.backspace());
-        edit.put(new KeyStroke(KeyEvent.VK_LEFT), e -> editor.moveLeft());
-        edit.put(new KeyStroke(KeyEvent.VK_RIGHT), e -> editor.moveRight());
-        edit.put(new KeyStroke(KeyEvent.VK_SPACE), e -> editor.append(' '));
-
-        keymap.put(InputMode.EDIT, edit);
-    }
-
-    void runCommand(Command command) {
-        command.execute();
-
-        switch (command.selectionPolicy()) {
-            case KEEP -> {}
-            case CLEAR -> selectionManager.clear();
-            case COLLAPSE -> selectionManager.startSelection(new CellAddress(cursor.row, cursor.col));
-        }
-    }
-
-    void moveCursor(int dRow, int dCol) {
-        cursor.row += dRow;
-        cursor.col += dCol;
-
-        if (mode == InputMode.SELECT) {
-            selectionManager.update(
-                    new CellAddress(cursor.row, cursor.col)
-            );
-        }
-    }
-
-    void enterEditMode() {
-        mode = InputMode.EDIT;
-        editor.clear();
-
-        CellAddress addr = new CellAddress(cursor.row, cursor.col);
-        var cell = grid.getCell(addr);
-
-        if (cell == null) return;
-
-        Value raw = cell.getRaw();
-        if (raw == null || raw.isEmpty()) return;
-
-        // IMPORTANT: use RAW, not computed/display
-        editor.append(raw.display());
-    }
-
-
-    void commitEditorValue() {
-        String raw = editor.value();
-        CellAddress cellAddress = new CellAddress(cursor.row, cursor.col);
-
-        if (raw.isBlank()) {
-            grid.getCell(cursor.row, cursor.col).clear();
-            grid.recalculateAll(formulaEngine.evaluator());
-            return;
-        }
-
-        Value parsed = formulaEngine.parseValue(raw);
-        grid.setCell(cellAddress, parsed);
-        grid.recalculateAll(formulaEngine.evaluator());
-    }
+    Value parsed = formulaEngine.parseValue(raw);
+    grid.setCell(cellAddress, parsed);
+    grid.recalculateAll(formulaEngine.evaluator());
+  }
 }
