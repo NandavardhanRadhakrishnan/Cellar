@@ -3,16 +3,14 @@ package ui.input;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.awt.*;
-
 @Getter
 @RequiredArgsConstructor
 public enum InputMode {
-    NAVIGATE("NAV", new Color(115, 229, 115)),
-    EDIT("EDIT", new Color(255, 124, 62)),
-    SELECT("SEL", new Color(100, 149, 237));
+    NAVIGATE("NAV", "\033[48;2;115;229;115m\033[38;2;0;0;0m"),
+    EDIT("EDIT", "\033[48;2;255;124;62m\033[38;2;0;0;0m"),
+    SELECT("SEL", "\033[48;2;100;149;237m\033[38;2;255;255;255m");
 
     private final String label;
-    private final Color color;
+    private final String color;
 
 }

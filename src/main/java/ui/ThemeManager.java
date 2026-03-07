@@ -1,30 +1,28 @@
 package ui;
 
-import java.awt.*;
-
 public class ThemeManager {
 
   private static boolean isDarkMode = false;
 
   // Light mode colors
-  private static final Color LIGHT_BG = Color.WHITE;
-  private static final Color LIGHT_TEXT = Color.BLACK;
-  private static final Color LIGHT_GRID_BORDER = Color.GRAY;
-  private static final Color LIGHT_CURSOR_BORDER = new Color(255, 102, 0);
-  private static final Color LIGHT_SELECTION_BG = new Color(128, 176, 255);
-  private static final Color LIGHT_SELECTION_TEXT = Color.WHITE;
-  private static final Color LIGHT_PANEL_BG = Color.WHITE;
-  private static final Color LIGHT_STATUS_BAR_BG = new Color(235, 235, 235);
+  private static final String LIGHT_BG = "\033[0m"; // default background
+  private static final String LIGHT_TEXT = "\033[38;2;0;0;0m";
+  private static final String LIGHT_GRID_BORDER = "\033[38;2;128;128;128m";
+  private static final String LIGHT_CURSOR_BORDER = "\033[38;2;255;102;0m";
+  private static final String LIGHT_SELECTION_BG = "\033[48;2;128;176;255m";
+  private static final String LIGHT_SELECTION_TEXT = "\033[38;2;255;255;255m";
+  private static final String LIGHT_PANEL_BG = "\033[0m";
+  private static final String LIGHT_STATUS_BAR_BG = "\033[48;2;235;235;235m";
 
   // Dark mode colors
-  private static final Color DARK_BG = new Color(30, 30, 30);
-  private static final Color DARK_TEXT = new Color(220, 220, 220);
-  private static final Color DARK_GRID_BORDER = new Color(80, 80, 80);
-  private static final Color DARK_CURSOR_BORDER = new Color(255, 140, 0);
-  private static final Color DARK_SELECTION_BG = new Color(70, 130, 180);
-  private static final Color DARK_SELECTION_TEXT = new Color(220, 220, 220);
-  private static final Color DARK_PANEL_BG = new Color(25, 25, 25);
-  private static final Color DARK_STATUS_BAR_BG = new Color(40, 40, 40);
+  private static final String DARK_BG = "\033[48;2;30;30;30m";
+  private static final String DARK_TEXT = "\033[38;2;220;220;220m";
+  private static final String DARK_GRID_BORDER = "\033[38;2;80;80;80m";
+  private static final String DARK_CURSOR_BORDER = "\033[38;2;255;140;0m";
+  private static final String DARK_SELECTION_BG = "\033[48;2;70;130;180m";
+  private static final String DARK_SELECTION_TEXT = "\033[38;2;220;220;220m";
+  private static final String DARK_PANEL_BG = "\033[48;2;25;25;25m";
+  private static final String DARK_STATUS_BAR_BG = "\033[48;2;40;40;40m";
 
   public static void toggleTheme() {
     isDarkMode = !isDarkMode;
@@ -34,7 +32,7 @@ public class ThemeManager {
     return isDarkMode;
   }
 
-  public static Color getCellBackground(
+  public static String getCellBackground(
     boolean isCursorCell,
     boolean isSelected
   ) {
@@ -49,7 +47,7 @@ public class ThemeManager {
     }
   }
 
-  public static Color getCellText(boolean isSelected) {
+  public static String getCellText(boolean isSelected) {
     if (isDarkMode) {
       return isSelected ? DARK_SELECTION_TEXT : DARK_TEXT;
     } else {
@@ -57,23 +55,27 @@ public class ThemeManager {
     }
   }
 
-  public static Color getGridBorder() {
+  public static String getGridBorder() {
     return isDarkMode ? DARK_GRID_BORDER : LIGHT_GRID_BORDER;
   }
 
-  public static Color getCursorBorder() {
+  public static String getCursorBorder() {
     return isDarkMode ? DARK_CURSOR_BORDER : LIGHT_CURSOR_BORDER;
   }
 
-  public static Color getPanelBackground() {
+  public static String getPanelBackground() {
     return isDarkMode ? DARK_PANEL_BG : LIGHT_PANEL_BG;
   }
 
-  public static Color getStatusBarBackground() {
+  public static String getStatusBarBackground() {
     return isDarkMode ? DARK_STATUS_BAR_BG : LIGHT_STATUS_BAR_BG;
   }
 
-  public static Color getStatusBarText() {
+  public static String getStatusBarText() {
     return isDarkMode ? DARK_TEXT : LIGHT_TEXT;
+  }
+  
+  public static String getReset() {
+    return "\033[0m";
   }
 }

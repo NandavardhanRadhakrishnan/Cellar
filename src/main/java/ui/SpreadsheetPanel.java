@@ -5,11 +5,13 @@ import core.grid.CellAddress;
 import core.grid.Grid;
 import core.grid.selection.Selection;
 import core.grid.selection.SelectionManager;
-import java.awt.*;
-import java.awt.BasicStroke;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import javax.swing.*;
+import com.williamcallahan.tui4j.compat.bubbletea.Model;
+import com.williamcallahan.tui4j.compat.bubbletea.UpdateResult;
+import com.williamcallahan.tui4j.compat.bubbletea.Command;
+import com.williamcallahan.tui4j.compat.bubbletea.message.KeyPressMessage;
+import com.williamcallahan.tui4j.compat.bubbletea.Message;
+import com.williamcallahan.tui4j.compat.bubbletea.message.QuitMessage;
+import com.williamcallahan.tui4j.compat.bubbletea.message.WindowSizeMessage;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -17,82 +19,124 @@ import ui.input.InputController;
 import util.Util;
 
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class SpreadsheetPanel extends JPanel {
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class SpreadsheetPanel implements Model {
 
-  static final int CELL_W = 80;
-  static final int CELL_H = 25;
+  static final int CELL_W = 12;
 
-  Grid grid;
-  Cursor cursor;
-  CellEditor editor;
-  SelectionManager selectionManager;
-  InputController input;
-  FormulaEngine formulaEngine;
+  final Grid grid;
+  final Cursor cursor;
+  final CellEditor editor;
+  final SelectionManager selectionManager;
+  final InputController input;
+  final FormulaEngine formulaEngine;
 
-  StatusBar statusBar = new StatusBar();
+  final StatusBar statusBar = new StatusBar();
 
-  {
-    setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
-    setBackground(ThemeManager.getPanelBackground());
-    setFocusable(true);
-    requestFocusInWindow();
+  int width = 80;
+  int height = 24;
 
-    addKeyListener(
-      new KeyAdapter() {
-        @Override
-        public void keyPressed(KeyEvent e) {
-          input.handleKey(e);
-          // Update background in case theme was toggled
-          setBackground(ThemeManager.getPanelBackground());
-          grid.recalculateAll(formulaEngine.evaluator());
-          repaint();
-        }
-      }
-    );
+  @Override
+  public Command init() {
+    return null;
   }
 
   @Override
-  protected void paintComponent(Graphics g) {
-    super.paintComponent(g);
+  public UpdateResult<? extends Model> update(Message msg) {
+    if (msg instanceof WindowSizeMessage wsm) {
+        this.width = wsm.width();
+        this.height = wsm.height();
+        return UpdateResult.from(this);
+    }
+    
+    if (msg instanceof KeyPressMessage keyPressMessage) {
+        if (keyPressMessage.key().equals("ctrl+c")) {
+            return UpdateResult.from(this, QuitMessage::new);
+        }
+        
+        input.handleKey(keyPressMessage);
+        return UpdateResult.from(this);
+    }
+    
+    return UpdateResult.from(this);
+  }
 
-    int usableHeight = getHeight() - StatusBar.HEIGHT;
+  @Override
+  public String view() {
+    StringBuilder sb = new StringBuilder();
+    
+    int usableHeight = height - 1; // 1 row for status bar
+    int maxRows = Math.min((usableHeight - 1) / 2, grid.rows);
+    if (maxRows < 0) maxRows = 0;
+    
     Selection selection = selectionManager.getSelection();
 
-    for (int r = 0; r < grid.rows; r++) {
-      int y = r * CELL_H;
-      if (y + CELL_H > usableHeight) break;
+    // Build horizontal divider
+    StringBuilder divSb = new StringBuilder();
+    divSb.append(ThemeManager.getGridBorder());
+    divSb.append("+");
+    for (int c = 0; c < grid.cols; c++) {
+        divSb.append("-".repeat(CELL_W)).append("+");
+    }
+    divSb.append(ThemeManager.getReset()).append("\n");
+    String hDivider = divSb.toString();
 
+    if (maxRows > 0) {
+        sb.append(hDivider);
+    }
+
+    for (int r = 0; r < maxRows; r++) {
       for (int c = 0; c < grid.cols; c++) {
-        int x = c * CELL_W;
         CellAddress addr = new CellAddress(r, c);
 
         boolean isCursor = cursor.row == r && cursor.col == c;
+        boolean isNextCursor = cursor.row == r && cursor.col == c + 1;
         boolean isSelected = selection != null && selection.contains(addr);
 
-        // Background color based on selection/cursor state
-        g.setColor(ThemeManager.getCellBackground(isCursor, isSelected));
-        g.fillRect(x, y, CELL_W, CELL_H);
-
-        // Cell border - thicker and colored for cursor cell
-        if (isCursor) {
-          g.setColor(ThemeManager.getCursorBorder());
-          ((Graphics2D) g).setStroke(new BasicStroke(2));
-        } else {
-          g.setColor(ThemeManager.getGridBorder());
-          ((Graphics2D) g).setStroke(new BasicStroke(1));
+        if (c == 0) {
+            if (isCursor) {
+                sb.append(ThemeManager.getCursorBorder()).append("[").append(ThemeManager.getReset());
+            } else {
+                sb.append(ThemeManager.getGridBorder()).append("|").append(ThemeManager.getReset());
+            }
         }
-        g.drawRect(x, y, CELL_W, CELL_H);
 
-        // Text color based on theme
-        g.setColor(ThemeManager.getCellText(isSelected));
-        g.drawString(grid.getCell(r, c).getValue().display(), x + 5, y + 17);
+        String bg = ThemeManager.getCellBackground(isCursor, isSelected);
+        String fg = ThemeManager.getCellText(isSelected);
+        
+        String val = grid.getCell(r, c).getValue().display();
+        
+        // Pad or truncate to CELL_W - 2
+        if (val.length() > CELL_W - 2) {
+            val = val.substring(0, CELL_W - 2);
+        }
+        
+        String valPadded = String.format("%-" + (CELL_W - 2) + "s", val);
+        
+        sb.append(bg).append(fg).append(" ").append(valPadded).append(" ").append(ThemeManager.getReset());
+        
+        // Right border logic
+        if (isCursor) {
+            sb.append(ThemeManager.getCursorBorder()).append("]").append(ThemeManager.getReset());
+        } else if (isNextCursor) {
+            sb.append(ThemeManager.getCursorBorder()).append("[").append(ThemeManager.getReset());
+        } else {
+            sb.append(ThemeManager.getGridBorder()).append("|").append(ThemeManager.getReset());
+        }
       }
+      sb.append("\n");
+      sb.append(hDivider);
+    }
+    // Fill remaining rows if needed
+    int linesUsed = maxRows > 0 ? 1 + (maxRows * 2) : 0;
+    for (int r = linesUsed; r < usableHeight; r++) {
+        sb.append("\n");
     }
 
     String statusText = baseStatusText() + selectionSuffix();
+    sb.append(statusBar.render(width, input.getMode(), statusText));
 
-    statusBar.draw(g, getWidth(), getHeight(), input.getMode(), statusText);
+    return sb.toString();
   }
 
   private String baseStatusText() {

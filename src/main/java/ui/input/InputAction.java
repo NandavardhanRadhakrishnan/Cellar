@@ -1,8 +1,8 @@
 package ui.input;
 
-import java.awt.event.KeyEvent;
+import com.williamcallahan.tui4j.compat.bubbletea.message.KeyPressMessage;
 
 @FunctionalInterface
 public interface InputAction {
-    void run(KeyEvent e);
+    void run(KeyPressMessage e);
 }
