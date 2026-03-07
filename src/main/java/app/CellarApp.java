@@ -6,22 +6,18 @@ import application.commands.ClearCellsCommand;
 import application.commands.CopyCellsCommand;
 import application.commands.ToggleDarkModeCommand;
 import core.clipboard.Clipboard;
-import core.eval.Evaluator;
-import core.formula.Formula;
 import core.formula.FormulaEngine;
 import core.grid.Grid;
 import core.grid.selection.SelectionManager;
+import com.williamcallahan.tui4j.compat.bubbletea.Program;
 import java.util.List;
-import javax.swing.*;
 import ui.*;
-import ui.CellEditor;
 import ui.clipboard.SystemClipboard;
 import ui.input.InputController;
 
 public class CellarApp {
 
   public static void main(String[] args) {
-    SwingUtilities.invokeLater(() -> {
       // --- core ---
       Grid grid = new Grid(20, 10);
       SelectionManager selectionManager = new SelectionManager();
@@ -66,12 +62,6 @@ public class CellarApp {
         formulaEngine
       );
 
-      JFrame frame = new JFrame("Cellar");
-      frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-      frame.setSize(800, 800);
-      frame.setLocationRelativeTo(null);
-      frame.add(panel);
-      frame.setVisible(true);
-    });
+      new Program(panel).run();
   }
 }

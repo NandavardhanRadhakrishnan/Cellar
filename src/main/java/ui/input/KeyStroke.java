@@ -1,36 +1,24 @@
 package ui.input;
 
 import lombok.Value;
-
-import java.awt.event.KeyEvent;
+import com.williamcallahan.tui4j.compat.bubbletea.message.KeyPressMessage;
 
 @Value
 public class KeyStroke {
-    int keyCode;
-    boolean ctrl;
-    boolean shift;
+    String key;
     boolean alt;
 
-    public static KeyStroke from(KeyEvent e){
-        return new KeyStroke(
-                e.getKeyCode(),
-                e.isControlDown(),
-                e.isShiftDown(),
-                e.isAltDown()
-        );
+    public static KeyStroke from(KeyPressMessage e){
+        return new KeyStroke(e.key().toLowerCase(), e.alt());
     }
 
-    public KeyStroke(int keyCode) {
-        this.keyCode = keyCode;
-        this.ctrl = false;
-        this.shift = false;
+    public KeyStroke(String key) {
+        this.key = key;
         this.alt = false;
     }
 
-    public KeyStroke(int keyCode, boolean ctrl, boolean shift, boolean alt) {
-        this.keyCode = keyCode;
-        this.ctrl = ctrl;
-        this.shift = shift;
+    public KeyStroke(String key, boolean alt) {
+        this.key = key;
         this.alt = alt;
     }
 }

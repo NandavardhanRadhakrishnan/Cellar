@@ -7,7 +7,7 @@ import core.grid.CellAddress;
 import core.grid.Grid;
 import core.grid.selection.SelectionManager;
 import core.value.Value;
-import java.awt.event.KeyEvent;
+import com.williamcallahan.tui4j.compat.bubbletea.message.KeyPressMessage;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +39,7 @@ public final class InputController {
     initEditMode();
   }
 
-  public void handleKey(KeyEvent e) {
+  public void handleKey(KeyPressMessage e) {
     Map<KeyStroke, InputAction> actions = keymap.getOrDefault(mode, Map.of());
 
     InputAction action = actions.get(KeyStroke.from(e));
@@ -48,11 +48,20 @@ public final class InputController {
       return;
     }
 
+    // A fallback if key is capitalised but we registered lowercase
+    String lowerKey = e.key().toLowerCase();
+    KeyStroke fallbackStroke = new KeyStroke(lowerKey, e.alt());
+    InputAction fallbackAction = actions.get(fallbackStroke);
+    if (fallbackAction != null) {
+        fallbackAction.run(e);
+        return;
+    }
+
     // default character handling
     if (mode == InputMode.EDIT) {
-      char ch = e.getKeyChar();
-      if (!Character.isISOControl(ch)) {
-        editor.append(ch);
+      String key = e.key();
+      if (key.length() == 1 && !e.alt()) {
+        editor.append(key.charAt(0));
       }
     }
   }
@@ -60,13 +69,18 @@ public final class InputController {
   void initNavigateMode() {
     Map<KeyStroke, InputAction> nav = new HashMap<>();
 
-    nav.put(new KeyStroke(KeyEvent.VK_W), e -> moveCursor(-1, 0));
-    nav.put(new KeyStroke(KeyEvent.VK_S), e -> moveCursor(1, 0));
-    nav.put(new KeyStroke(KeyEvent.VK_A), e -> moveCursor(0, -1));
-    nav.put(new KeyStroke(KeyEvent.VK_D), e -> moveCursor(0, 1));
+    nav.put(new KeyStroke("w"), e -> moveCursor(-1, 0));
+    nav.put(new KeyStroke("s"), e -> moveCursor(1, 0));
+    nav.put(new KeyStroke("a"), e -> moveCursor(0, -1));
+    nav.put(new KeyStroke("d"), e -> moveCursor(0, 1));
+    // Up/down/left/right defaults
+    nav.put(new KeyStroke("up"), e -> moveCursor(-1, 0));
+    nav.put(new KeyStroke("down"), e -> moveCursor(1, 0));
+    nav.put(new KeyStroke("left"), e -> moveCursor(0, -1));
+    nav.put(new KeyStroke("right"), e -> moveCursor(0, 1));
 
     nav.put(
-      new KeyStroke(KeyEvent.VK_SPACE),
+      new KeyStroke(" "),
       e -> {
         mode = InputMode.SELECT;
         selectionManager.startSelection(
@@ -75,19 +89,21 @@ public final class InputController {
       }
     );
 
-    nav.put(new KeyStroke(KeyEvent.VK_ENTER), e -> enterEditMode());
+    nav.put(new KeyStroke("enter"), e -> enterEditMode());
 
-    //        Commands
+    // Commands
     nav.put(
-      new KeyStroke(KeyEvent.VK_BACK_SPACE),
+      new KeyStroke("ctrl+h"),
       e -> runCommand(commandRegistry.command("clear_cells"))
     );
+    // Ctrl+C
     nav.put(
-      new KeyStroke(KeyEvent.VK_C, true, false, false),
+      new KeyStroke("ctrl+c"),
       e -> runCommand(commandRegistry.command("copy"))
     );
+    // Ctrl+Shift+T
     nav.put(
-      new KeyStroke(KeyEvent.VK_T, true, true, false),
+      new KeyStroke("ctrl+t"),
       e -> runCommand(commandRegistry.command("toggle_dark_mode"))
     );
 
@@ -97,21 +113,34 @@ public final class InputController {
   void initSelectMode() {
     Map<KeyStroke, InputAction> select = new HashMap<>();
 
-    select.put(new KeyStroke(KeyEvent.VK_W), e -> moveCursor(-1, 0));
-    select.put(new KeyStroke(KeyEvent.VK_S), e -> moveCursor(1, 0));
-    select.put(new KeyStroke(KeyEvent.VK_A), e -> moveCursor(0, -1));
-    select.put(new KeyStroke(KeyEvent.VK_D), e -> moveCursor(0, 1));
+    select.put(new KeyStroke("w"), e -> moveCursor(-1, 0));
+    select.put(new KeyStroke("s"), e -> moveCursor(1, 0));
+    select.put(new KeyStroke("a"), e -> moveCursor(0, -1));
+    select.put(new KeyStroke("d"), e -> moveCursor(0, 1));
+    select.put(new KeyStroke("up"), e -> moveCursor(-1, 0));
+    select.put(new KeyStroke("down"), e -> moveCursor(1, 0));
+    select.put(new KeyStroke("left"), e -> moveCursor(0, -1));
+    select.put(new KeyStroke("right"), e -> moveCursor(0, 1));
 
     select.put(
-      new KeyStroke(KeyEvent.VK_SPACE),
+      new KeyStroke(" "),
       e -> mode = InputMode.NAVIGATE
     );
-    select.put(new KeyStroke(KeyEvent.VK_ENTER), e -> enterEditMode());
+    select.put(new KeyStroke("enter"), e -> enterEditMode());
 
-    //        Commands
+    // Commands
     select.put(
-      new KeyStroke(KeyEvent.VK_BACK_SPACE),
+      new KeyStroke("ctrl+h"),
       e -> runCommand(commandRegistry.command("clear_cells"))
+    );
+    // Same copy/theme keys
+    select.put(
+      new KeyStroke("ctrl+c"),
+      e -> runCommand(commandRegistry.command("copy"))
+    );
+    select.put(
+      new KeyStroke("ctrl+t"),
+      e -> runCommand(commandRegistry.command("toggle_dark_mode"))
     );
 
     keymap.put(InputMode.SELECT, select);
@@ -121,17 +150,17 @@ public final class InputController {
     Map<KeyStroke, InputAction> edit = new HashMap<>();
 
     edit.put(
-      new KeyStroke(KeyEvent.VK_ENTER),
+      new KeyStroke("enter"),
       e -> {
         commitEditorValue();
         mode = InputMode.NAVIGATE;
       }
     );
 
-    edit.put(new KeyStroke(KeyEvent.VK_BACK_SPACE), e -> editor.backspace());
-    edit.put(new KeyStroke(KeyEvent.VK_LEFT), e -> editor.moveLeft());
-    edit.put(new KeyStroke(KeyEvent.VK_RIGHT), e -> editor.moveRight());
-    edit.put(new KeyStroke(KeyEvent.VK_SPACE), e -> editor.append(' '));
+    edit.put(new KeyStroke("ctrl+h"), e -> editor.backspace());
+    edit.put(new KeyStroke("left"), e -> editor.moveLeft());
+    edit.put(new KeyStroke("right"), e -> editor.moveRight());
+    edit.put(new KeyStroke(" "), e -> editor.append(' '));
 
     keymap.put(InputMode.EDIT, edit);
   }
