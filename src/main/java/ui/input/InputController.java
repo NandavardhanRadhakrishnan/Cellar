@@ -178,8 +178,15 @@ public final class InputController {
   }
 
   void moveCursor(int dRow, int dCol) {
-    cursor.row += dRow;
-    cursor.col += dCol;
+    int nextRow = cursor.row + dRow;
+    int nextCol = cursor.col + dCol;
+
+    if (nextRow >= 0 && nextRow < grid.rows) {
+      cursor.row = nextRow;
+    }
+    if (nextCol >= 0 && nextCol < grid.cols) {
+      cursor.col = nextCol;
+    }
 
     if (mode == InputMode.SELECT) {
       selectionManager.update(new CellAddress(cursor.row, cursor.col));

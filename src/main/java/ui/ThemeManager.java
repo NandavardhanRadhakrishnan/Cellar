@@ -8,7 +8,7 @@ public class ThemeManager {
   private static final String LIGHT_BG = "\033[0m"; // default background
   private static final String LIGHT_TEXT = "\033[38;2;0;0;0m";
   private static final String LIGHT_GRID_BORDER = "\033[38;2;128;128;128m";
-  private static final String LIGHT_CURSOR_BORDER = "\033[38;2;255;102;0m";
+  private static final String LIGHT_CURSOR_BORDER = "\033[38;2;0;255;255m";
   private static final String LIGHT_SELECTION_BG = "\033[48;2;128;176;255m";
   private static final String LIGHT_SELECTION_TEXT = "\033[38;2;255;255;255m";
   private static final String LIGHT_PANEL_BG = "\033[0m";
@@ -18,7 +18,7 @@ public class ThemeManager {
   private static final String DARK_BG = "\033[48;2;30;30;30m";
   private static final String DARK_TEXT = "\033[38;2;220;220;220m";
   private static final String DARK_GRID_BORDER = "\033[38;2;80;80;80m";
-  private static final String DARK_CURSOR_BORDER = "\033[38;2;255;140;0m";
+  private static final String DARK_CURSOR_BORDER = "\033[38;2;0;255;255m";
   private static final String DARK_SELECTION_BG = "\033[48;2;70;130;180m";
   private static final String DARK_SELECTION_TEXT = "\033[38;2;220;220;220m";
   private static final String DARK_PANEL_BG = "\033[48;2;25;25;25m";
@@ -37,11 +37,9 @@ public class ThemeManager {
     boolean isSelected
   ) {
     if (isDarkMode) {
-      if (isCursorCell) return DARK_BG;
       if (isSelected) return DARK_SELECTION_BG;
       return DARK_BG;
     } else {
-      if (isCursorCell) return LIGHT_BG;
       if (isSelected) return LIGHT_SELECTION_BG;
       return LIGHT_BG;
     }
@@ -77,5 +75,13 @@ public class ThemeManager {
   
   public static String getReset() {
     return "\033[0m";
+  }
+
+  public static String getBold() {
+    return "\033[1m";
+  }
+
+  public static String getBoldOff() {
+    return "\033[22m";
   }
 }
